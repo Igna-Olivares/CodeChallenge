@@ -2,6 +2,7 @@ package com.iolivares.codeChallenge.bank.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,9 +11,8 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -36,7 +36,6 @@ import com.iolivares.codeChallenge.common.utils.DateUtils;
 @SpringBootTest(classes = CodeChallengeApplication.class)
 public class TransactionsServiceTest {
 
-
 	OrikaConfiguration orikaConfiguration = new OrikaConfiguration();
 
 	@InjectMocks
@@ -47,12 +46,9 @@ public class TransactionsServiceTest {
 
 	@Mock
 	private AccountRepository accountRepository;
-	
+
 	@Mock
 	private CreateTransactionValidator transactionValidator;
-
-	@Rule
-	public ExpectedException expectedEx = ExpectedException.none();
 
 	@Before
 	public void setUp() {
@@ -96,74 +92,84 @@ public class TransactionsServiceTest {
 	public void testCreateTransactionNotExistingAccount() {
 
 		// Expected exception
-		expectedEx.expect(TechnicalException.class);
-		expectedEx.expectMessage("There is no account associated with that IBAN");
+		TechnicalException exception = Assertions.assertThrows(TechnicalException.class, () -> {
 
-		// Given
-		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
-		newTransaction.setReference("12345A");
-		newTransaction.setAccount_iban("ES9820385778983000760236");
-		newTransaction.setDate("2019-07-16T16:55:42.000Z");
-		newTransaction.setAmount(193.38);
-		newTransaction.setFee(3.18);
-		newTransaction.setDescription("Restaurant payment");
+			// Given
+			CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+			newTransaction.setReference("12345A");
+			newTransaction.setAccount_iban("ES9820385778983000760236");
+			newTransaction.setDate("2019-07-16T16:55:42.000Z");
+			newTransaction.setAmount(193.38);
+			newTransaction.setFee(3.18);
+			newTransaction.setDescription("Restaurant payment");
 
-		// When
-		when(accountRepository.findByIban(anyString())).thenReturn(null);
-		transactionService.createTransaction(newTransaction);
+			// When
+			when(accountRepository.findByIban(anyString())).thenReturn(null);
+			transactionService.createTransaction(newTransaction);
+		});
+
+		assertTrue(exception.getMessage().contains("There is no account associated with that IBAN"));
+
 	}
 
 	@Test
 	public void testCreateTransactionValidationError() {
 
 		// Expected exception
-		expectedEx.expect(TechnicalException.class);
-		expectedEx.expectMessage("Create Transaction validation error");
+		TechnicalException exception = Assertions.assertThrows(TechnicalException.class, () -> {
 
-		// Given
-		Account mockedAccount = new Account();
-		mockedAccount.setBalance(5000.0);
-		mockedAccount.setIban("ES9820385778983000760236");
-		mockedAccount.setHolder("Ignacio");
-		
-		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
-		newTransaction.setReference("12345A");
-		newTransaction.setAccount_iban("");
-		newTransaction.setDate("2019-07-16T16:55:42.000Z");
-		newTransaction.setFee(3.18);
-		newTransaction.setDescription("Restaurant payment");
+			// Given
+			Account mockedAccount = new Account();
+			mockedAccount.setBalance(5000.0);
+			mockedAccount.setIban("ES9820385778983000760236");
+			mockedAccount.setHolder("Ignacio");
 
-		// When
-		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
-		when(transactionValidator.validate(newTransaction,5000.0)).thenReturn(Arrays.asList("The Amount is required"));
-		transactionService.createTransaction(newTransaction);
+			CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+			newTransaction.setReference("12345A");
+			newTransaction.setAccount_iban("");
+			newTransaction.setDate("2019-07-16T16:55:42.000Z");
+			newTransaction.setFee(3.18);
+			newTransaction.setDescription("Restaurant payment");
+
+			// When
+			when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
+			when(transactionValidator.validate(newTransaction, 5000.0))
+					.thenReturn(Arrays.asList("The Amount is required"));
+			transactionService.createTransaction(newTransaction);
+
+		});
+
+		assertTrue(exception.getMessage().contains("Create Transaction validation error"));
 	}
-	
+
 	@Test
 	public void testCreateTransactionReferenceError() {
 
 		// Expected exception
-		expectedEx.expect(TechnicalException.class);
-		expectedEx.expectMessage("Create Transaction reference already exist");
+		TechnicalException exception = Assertions.assertThrows(TechnicalException.class, () -> {
 
-		// Given
-		Account mockedAccount = new Account();
-		mockedAccount.setBalance(5000.0);
-		mockedAccount.setIban("ES9820385778983000760236");
-		mockedAccount.setHolder("Ignacio");
-		Transaction mockedTransaction = new Transaction();
-		
-		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
-		newTransaction.setReference("12345A");
-		newTransaction.setAccount_iban("");
-		newTransaction.setDate("2019-07-16T16:55:42.000Z");
-		newTransaction.setFee(3.18);
-		newTransaction.setDescription("Restaurant payment");
+			// Given
+			Account mockedAccount = new Account();
+			mockedAccount.setBalance(5000.0);
+			mockedAccount.setIban("ES9820385778983000760236");
+			mockedAccount.setHolder("Ignacio");
+			Transaction mockedTransaction = new Transaction();
 
-		// When
-		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
-		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
-		transactionService.createTransaction(newTransaction);
+			CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+			newTransaction.setReference("12345A");
+			newTransaction.setAccount_iban("");
+			newTransaction.setDate("2019-07-16T16:55:42.000Z");
+			newTransaction.setFee(3.18);
+			newTransaction.setDescription("Restaurant payment");
+
+			// When
+			when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
+			when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
+			transactionService.createTransaction(newTransaction);
+		});
+
+		assertTrue(exception.getMessage().contains("Create Transaction reference already exist"));
+
 	}
 
 }
