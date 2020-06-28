@@ -28,9 +28,9 @@ public class Transaction {
 	
 	private long date;
 	
-	private double amount;
+	private Double amount;
 	
-	private double fee;
+	private Double fee;
 	
 	private String description;
 }

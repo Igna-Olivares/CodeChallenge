@@ -2,6 +2,7 @@ package com.iolivares.codeChallenge.bank.service.impl;
 
 import java.util.List;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -13,6 +14,7 @@ import com.iolivares.codeChallenge.bank.model.service.TransactionStatus;
 import com.iolivares.codeChallenge.bank.repository.AccountRepository;
 import com.iolivares.codeChallenge.bank.repository.TransactionRepository;
 import com.iolivares.codeChallenge.bank.service.TransactionService;
+import com.iolivares.codeChallenge.bank.validators.CreateTransactionValidator;
 import com.iolivares.codeChallenge.common.exceptions.TechnicalException;
 
 import lombok.Setter;
@@ -29,6 +31,9 @@ public class TransactionServiceImpl implements TransactionService {
 	
 	@Autowired 
 	private AccountRepository accountRepository;
+	
+	@Autowired
+	private CreateTransactionValidator transactionValidator;
 
 	@Override
 	public void createTransaction(CreateTransactionCommand newtransaction) {
@@ -37,6 +42,10 @@ public class TransactionServiceImpl implements TransactionService {
 		Account account = accountRepository.findByIban(newtransaction.getAccount_iban());
 		if(account == null) {
 			throw new TechnicalException("There is no account associated with that IBAN", HttpStatus.SC_NOT_FOUND);
+		}
+		List<String> errorList = transactionValidator.validate(newtransaction, account.getBalance());
+		if(CollectionUtils.isNotEmpty(errorList)) {
+			throw new TechnicalException("Create Transaction validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
 		}
 		
 		transactionRepository.save(defaultMapper.map(newtransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class));

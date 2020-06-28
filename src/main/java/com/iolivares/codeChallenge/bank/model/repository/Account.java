@@ -26,5 +26,5 @@ public class Account {
 	
 	private String holder;
 	
-	private double balance;
+	private Double balance;
 }

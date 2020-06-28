@@ -41,6 +41,7 @@ dependencies {
     
     //Apache
     compile 'org.apache.commons:commons-lang3:3.10'
+    compile 'org.apache.commons:commons-collections4:4.4'
 }
 
 test {

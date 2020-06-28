@@ -1,5 +1,7 @@
 package com.iolivares.codeChallenge.common.exceptions;
 
+import java.util.List;
+
 import lombok.Getter;
 
 public class TechnicalException extends RuntimeException {
@@ -11,9 +13,19 @@ public class TechnicalException extends RuntimeException {
 	
 	@Getter
 	private final int code;
+	
+	@Getter
+	private final List<String> errors;
 
 	public TechnicalException(String errorMsg, int errorCode) {
 		super(errorMsg);
 		this.code = errorCode;
+		this.errors = null;
+	}
+
+	public TechnicalException(String errorMsg, int errorCode, List<String> errorList) {
+		super(errorMsg);
+		this.code = errorCode;
+		this.errors = errorList;
 	}
 }
