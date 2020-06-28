@@ -3,6 +3,8 @@ package com.iolivares.codeChallenge.bank.service.impl;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -43,9 +45,16 @@ public class TransactionServiceImpl implements TransactionService {
 		if(account == null) {
 			throw new TechnicalException("There is no account associated with that IBAN", HttpStatus.SC_NOT_FOUND);
 		}
+		
 		List<String> errorList = transactionValidator.validate(newtransaction, account.getBalance());
 		if(CollectionUtils.isNotEmpty(errorList)) {
 			throw new TechnicalException("Create Transaction validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
+		}
+		
+		if(StringUtils.isNotEmpty(newtransaction.getReference()) && !validateReference(newtransaction.getReference())){
+			throw new TechnicalException("Create Transaction reference already exist", HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
+		}else {
+			newtransaction.setReference(generateReference());
 		}
 		
 		transactionRepository.save(defaultMapper.map(newtransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class));
@@ -63,5 +72,22 @@ public class TransactionServiceImpl implements TransactionService {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	///////////////////
+	//PRIVATE METHODS//
+	///////////////////
+	
+	private String generateReference() {
+		boolean isValid = false;
+		String randomReference = null;
+		while(isValid != true) {
+			randomReference = RandomStringUtils.randomAlphanumeric(6).toUpperCase();
+			isValid = validateReference(randomReference);
+		}
+		return randomReference;
+	}
 
+	private boolean validateReference(String randomReference) {
+		return transactionRepository.findById(randomReference) == null;
+	}
 }

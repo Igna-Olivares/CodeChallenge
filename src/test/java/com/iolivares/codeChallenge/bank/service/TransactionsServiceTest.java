@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,14 +32,10 @@ import com.iolivares.codeChallenge.common.configuration.OrikaConfiguration;
 import com.iolivares.codeChallenge.common.exceptions.TechnicalException;
 import com.iolivares.codeChallenge.common.utils.DateUtils;
 
-import uk.co.jemos.podam.api.PodamFactory;
-import uk.co.jemos.podam.api.PodamFactoryImpl;
-
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest(classes = CodeChallengeApplication.class)
 public class TransactionsServiceTest {
 
-	private static final PodamFactory factory = new PodamFactoryImpl();
 
 	OrikaConfiguration orikaConfiguration = new OrikaConfiguration();
 
@@ -63,7 +60,7 @@ public class TransactionsServiceTest {
 	}
 
 	@Test
-	public void testCreateOk() {
+	public void testCreateTransactionOk() {
 
 		// Given
 		Account mockedAccount = new Account();
@@ -72,7 +69,6 @@ public class TransactionsServiceTest {
 		mockedAccount.setHolder("Ignacio");
 
 		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
-		newTransaction.setReference("12345A");
 		newTransaction.setAccount_iban("ES9820385778983000760236");
 		newTransaction.setDate("2019-07-16T16:55:42.000Z");
 		newTransaction.setAmount(193.38);
@@ -81,16 +77,15 @@ public class TransactionsServiceTest {
 
 		// When
 		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
+		when(transactionRepository.findById(anyString())).thenReturn(null);
 		transactionService.createTransaction(newTransaction);
 
 		// Then
 		ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
 		verify(transactionRepository).save(transactionCaptor.capture());
 		Transaction createdTransaction = transactionCaptor.getValue();
-		assertThat(createdTransaction.getId()).isNotNull();
-		assertEquals(createdTransaction.getReference(), "12345A");
+		assertThat(createdTransaction.getReference()).isNotNull();
 		assertEquals(createdTransaction.getAccount_iban(), "ES9820385778983000760236");
-		assertEquals(createdTransaction.getReference(), "12345A");
 		assertEquals(createdTransaction.getDate(), DateUtils.StringDateToLong("2019-07-16T16:55:42.000Z"));
 		assertEquals(createdTransaction.getAmount(), 193.38, 0.01);
 		assertEquals(createdTransaction.getFee(), 3.18, 0.01);
@@ -98,7 +93,7 @@ public class TransactionsServiceTest {
 	}
 
 	@Test
-	public void testCreateNotExistingAccount() {
+	public void testCreateTransactionNotExistingAccount() {
 
 		// Expected exception
 		expectedEx.expect(TechnicalException.class);
@@ -119,7 +114,7 @@ public class TransactionsServiceTest {
 	}
 
 	@Test
-	public void testCreateValidationError() {
+	public void testCreateTransactionValidationError() {
 
 		// Expected exception
 		expectedEx.expect(TechnicalException.class);
@@ -141,6 +136,33 @@ public class TransactionsServiceTest {
 		// When
 		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
 		when(transactionValidator.validate(newTransaction,5000.0)).thenReturn(Arrays.asList("The Amount is required"));
+		transactionService.createTransaction(newTransaction);
+	}
+	
+	@Test
+	public void testCreateTransactionReferenceError() {
+
+		// Expected exception
+		expectedEx.expect(TechnicalException.class);
+		expectedEx.expectMessage("Create Transaction reference already exist");
+
+		// Given
+		Account mockedAccount = new Account();
+		mockedAccount.setBalance(5000.0);
+		mockedAccount.setIban("ES9820385778983000760236");
+		mockedAccount.setHolder("Ignacio");
+		Transaction mockedTransaction = new Transaction();
+		
+		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+		newTransaction.setReference("12345A");
+		newTransaction.setAccount_iban("");
+		newTransaction.setDate("2019-07-16T16:55:42.000Z");
+		newTransaction.setFee(3.18);
+		newTransaction.setDescription("Restaurant payment");
+
+		// When
+		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		transactionService.createTransaction(newTransaction);
 	}
 
