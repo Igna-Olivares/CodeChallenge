@@ -25,6 +25,7 @@ dependencies {
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
+	compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.13'
 	
 	// Tests
     testCompile "org.springframework.boot:spring-boot-starter-test"

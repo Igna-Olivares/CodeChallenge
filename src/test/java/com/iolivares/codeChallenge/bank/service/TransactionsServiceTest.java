@@ -2,10 +2,14 @@ package com.iolivares.codeChallenge.bank.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -15,10 +19,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.iolivares.codeChallenge.CodeChallengeApplication;
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
+import com.iolivares.codeChallenge.bank.model.repository.Account;
 import com.iolivares.codeChallenge.bank.model.repository.Transaction;
+import com.iolivares.codeChallenge.bank.repository.AccountRepository;
 import com.iolivares.codeChallenge.bank.repository.TransactionRepository;
 import com.iolivares.codeChallenge.bank.service.impl.TransactionServiceImpl;
 import com.iolivares.codeChallenge.common.configuration.OrikaConfiguration;
+import com.iolivares.codeChallenge.common.exceptions.TechnicalException;
 import com.iolivares.codeChallenge.common.utils.DateUtils;
 
 import uk.co.jemos.podam.api.PodamFactory;
@@ -38,6 +45,12 @@ public class TransactionsServiceTest {
 	@Mock
 	private TransactionRepository transactionRepository;
 	
+	@Mock
+	private AccountRepository accountRepository;
+	
+	@Rule
+	public ExpectedException expectedEx = ExpectedException.none();
+	
 	@Before
 	public void setUp() {
 		transactionService.setDefaultMapper(orikaConfiguration.defaultMapper());
@@ -47,6 +60,11 @@ public class TransactionsServiceTest {
 	public void testCreateOk() {
 		
 		// Given
+		Account mockedAccount = new Account();
+		mockedAccount.setBalance(5000.0);
+		mockedAccount.setIban("ES9820385778983000760236");
+		mockedAccount.setHolder("Ignacio");
+		
 		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
 		newTransaction.setReference("12345A");
 		newTransaction.setAccount_iban("ES9820385778983000760236");
@@ -56,6 +74,7 @@ public class TransactionsServiceTest {
 		newTransaction.setDescription("Restaurant payment");
 		
 		// When
+		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
 		transactionService.createTransaction(newTransaction);
 		
 		// Then
@@ -75,6 +94,22 @@ public class TransactionsServiceTest {
 	@Test
 	public void testCreateNotExistingAccount() {
 		
+		// Expected exception
+		expectedEx.expect(TechnicalException.class);
+		expectedEx.expectMessage("There is no account associated with that IBAN");
+		
+		// Given
+		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+		newTransaction.setReference("12345A");
+		newTransaction.setAccount_iban("ES9820385778983000760236");
+		newTransaction.setDate("2019-07-16T16:55:42.000Z");
+		newTransaction.setAmount(193.38);
+		newTransaction.setFee(3.18);
+		newTransaction.setDescription("Restaurant payment");
+				
+		// When
+		when(accountRepository.findByIban(anyString())).thenReturn(null);
+		transactionService.createTransaction(newTransaction);
 	}
 	
 	@Test
