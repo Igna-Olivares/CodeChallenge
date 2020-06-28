@@ -7,8 +7,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 
-import com.iolivares.codeChallenge.bank.model.api.AmountDirectionEnum;
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
 import com.iolivares.codeChallenge.bank.model.repository.Account;
 import com.iolivares.codeChallenge.bank.model.service.Transaction;
@@ -62,9 +63,9 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Override
-	public List<Transaction> searchTransactions(String iban, AmountDirectionEnum direction) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Transaction> searchTransactions(String iban, Direction direction) {
+		
+		return defaultMapper.mapAsList(transactionRepository.findByAccount_iban(iban, Sort.by(direction, "amount")), Transaction.class);
 	}
 
 	@Override
