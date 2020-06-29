@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -84,7 +85,7 @@ public class TransactionsServiceTest {
 
 		// When
 		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
-		when(transactionRepository.findById(anyString())).thenReturn(null);
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.empty());
 		transactionService.createTransaction(newTransaction);
 
 		// Then
@@ -212,6 +213,7 @@ public class TransactionsServiceTest {
 		String channel = "CLIENT";
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.empty());
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -228,11 +230,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().minusDays(1L).toEpochDay()); //yesterday on long
+		mockedTransaction.setDate(LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -250,11 +253,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().minusDays(1L).toEpochDay()); //yesterday on long
+		mockedTransaction.setDate(LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -272,11 +276,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().minusDays(1L).toEpochDay()); //yesterday on long
+		mockedTransaction.setDate(LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -295,11 +300,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().toEpochDay()); //today on long
+		mockedTransaction.setDate(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //today on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -317,11 +323,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().toEpochDay()); //today on long
+		mockedTransaction.setDate(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //today on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -339,11 +346,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().toEpochDay()); //today on long
+		mockedTransaction.setDate(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //today on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -362,11 +370,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().plusDays(1L).toEpochDay()); //tomorrow on long
+		mockedTransaction.setDate(LocalDate.now().plusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -384,11 +393,12 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().plusDays(1L).toEpochDay()); //tomorrow on long
+		mockedTransaction.setDate(LocalDate.now().plusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
@@ -406,16 +416,17 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccount_iban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().plusDays(1L).toEpochDay()); //tomorrow on long
+		mockedTransaction.setDate(LocalDate.now().plusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
 		// When
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.of(mockedTransaction));
 		TransactionStatus transactionStatus = transactionService.searchTransactionStatus(reference, channel);
 		
 		//Then
 		assertEquals(transactionStatus.getReference(), reference);
-		assertEquals(transactionStatus.getStatus(), "PENDING");
+		assertEquals(transactionStatus.getStatus(), "FUTURE");
 		assertEquals(transactionStatus.getAmount(), mockedTransaction.getAmount(), 0.01);
 		assertEquals(transactionStatus.getFee(),mockedTransaction.getFee(),0.01);
 	}

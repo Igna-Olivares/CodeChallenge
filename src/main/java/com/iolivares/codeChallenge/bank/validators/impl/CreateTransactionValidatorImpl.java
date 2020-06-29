@@ -25,12 +25,12 @@ public class CreateTransactionValidatorImpl implements CreateTransactionValidato
 			errorList.add("The Amount is required");
 		}
 		
-		if(newTransaction.getAmount() != null && (accountBalance + newTransaction.getAmount() == 0) ) {
+		if(newTransaction.getAmount() != null && (accountBalance + newTransaction.getAmount() <= 0) ) {
 			errorList.add("A transaction can't leaves the total account balance bellow 0");
 		}
 		
-		if(newTransaction.getFee() != null && (accountBalance - newTransaction.getFee() == 0) ) {
-			errorList.add("A transaction fee can't leaves the total account balance bellow 0");
+		if(newTransaction.getFee() != null && (accountBalance + (newTransaction.getAmount() - newTransaction.getFee()) <= 0) ) {
+			errorList.add("A transaction minus the fee can't leaves the total account balance bellow 0");
 		}
 			
 		return errorList;

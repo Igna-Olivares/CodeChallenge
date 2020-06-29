@@ -1,6 +1,7 @@
 package com.iolivares.codeChallenge.bank.service.impl;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -9,6 +10,7 @@ import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.stereotype.Service;
 
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
 import com.iolivares.codeChallenge.bank.model.repository.Account;
@@ -19,69 +21,102 @@ import com.iolivares.codeChallenge.bank.repository.TransactionRepository;
 import com.iolivares.codeChallenge.bank.service.TransactionService;
 import com.iolivares.codeChallenge.bank.validators.CreateTransactionValidator;
 import com.iolivares.codeChallenge.common.exceptions.TechnicalException;
+import com.iolivares.codeChallenge.common.utils.DateUtils;
 
 import lombok.Setter;
 import ma.glasnost.orika.MapperFacade;
 
+@Service
 public class TransactionServiceImpl implements TransactionService {
-	
+
+	private static final int AFTER_TODAY = 1;
+	private static final int EQUALS_TODAY = 0;
+	private static final int BEFORE_TODAY = -1;
+
 	@Setter
 	@Autowired
 	private MapperFacade defaultMapper;
-	
+
 	@Autowired
 	private TransactionRepository transactionRepository;
-	
-	@Autowired 
+
+	@Autowired
 	private AccountRepository accountRepository;
-	
+
 	@Autowired
 	private CreateTransactionValidator transactionValidator;
 
 	@Override
 	public void createTransaction(CreateTransactionCommand newtransaction) {
-		
-		
+
 		Account account = accountRepository.findByIban(newtransaction.getAccount_iban());
-		if(account == null) {
+		if (account == null) {
 			throw new TechnicalException("There is no account associated with that IBAN", HttpStatus.SC_NOT_FOUND);
 		}
-		
+
 		List<String> errorList = transactionValidator.validate(newtransaction, account.getBalance());
-		if(CollectionUtils.isNotEmpty(errorList)) {
-			throw new TechnicalException("Create Transaction validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
+		if (CollectionUtils.isNotEmpty(errorList)) {
+			throw new TechnicalException("Create Transaction validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY,
+					errorList);
 		}
-		
-		if(StringUtils.isNotEmpty(newtransaction.getReference()) && !validateReference(newtransaction.getReference())){
-			throw new TechnicalException("Create Transaction reference already exist", HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
-		}else {
+
+		if (StringUtils.isNotEmpty(newtransaction.getReference())
+				&& !validateReference(newtransaction.getReference())) {
+			throw new TechnicalException("Create Transaction reference already exist",
+					HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
+		} else {
 			newtransaction.setReference(generateReference());
 		}
-		
-		transactionRepository.save(defaultMapper.map(newtransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class));
+
+		transactionRepository.save(
+				defaultMapper.map(newtransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class));
 
 	}
 
 	@Override
 	public List<Transaction> searchTransactions(String iban, Direction direction) {
-		
-		return defaultMapper.mapAsList(transactionRepository.findByAccount_iban(iban, Sort.by(direction, "amount")), Transaction.class);
+
+		return defaultMapper.mapAsList(transactionRepository.findByAccount_iban(iban, Sort.by(direction, "amount")),
+				Transaction.class);
 	}
 
 	@Override
 	public TransactionStatus searchTransactionStatus(String reference, String channel) {
-		// TODO Auto-generated method stub
-		return null;
+
+		Optional<com.iolivares.codeChallenge.bank.model.repository.Transaction> repositoryTransaction = transactionRepository
+				.findById(reference);
+
+		TransactionStatus response = new TransactionStatus();
+		response.setReference(reference);
+		if (!repositoryTransaction.isPresent()) {
+			response.setInvalidStatus();
+		} else {
+			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction = repositoryTransaction.get();
+			int dateValue = DateUtils.compareDatesToNow(transaction.getDate());
+			switch (dateValue) {
+				case BEFORE_TODAY:
+					caseBeforeToday(channel, response, transaction);
+					break;
+				case EQUALS_TODAY:
+					caseEqualsToday(channel, response, transaction);
+					break;
+				case AFTER_TODAY:
+					caseAfterToday(channel, response, transaction);
+					break;
+			}
+		}
+
+		return response;
 	}
-	
+
 	///////////////////
-	//PRIVATE METHODS//
+	// PRIVATE METHODS//
 	///////////////////
-	
+
 	private String generateReference() {
 		boolean isValid = false;
 		String randomReference = null;
-		while(isValid != true) {
+		while (isValid != true) {
 			randomReference = RandomStringUtils.randomAlphanumeric(6).toUpperCase();
 			isValid = validateReference(randomReference);
 		}
@@ -89,6 +124,68 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	private boolean validateReference(String randomReference) {
-		return transactionRepository.findById(randomReference) == null;
+		return !transactionRepository.findById(randomReference).isPresent();
+	}
+
+
+	private void caseAfterToday(String channel, TransactionStatus response,
+			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
+		if (isClient(channel)) {
+			response.setFutureStatus();
+			fillResponseWithAmountLessFee(response, transaction);
+		} else if (isAtm(channel)) {
+			response.setPendingStatus();
+			fillResponseWithAmountLessFee(response, transaction);
+		} else if (isInternal(channel)) {
+			response.setFutureStatus();
+			fillResponseWithAmountAndFee(response, transaction);
+		}
+	}
+
+	private void caseEqualsToday(String channel, TransactionStatus response,
+			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
+		response.setPendingStatus();
+		if (isClientOrAtm(channel)) {
+			fillResponseWithAmountLessFee(response, transaction);
+		} else if (isInternal(channel)) {
+			fillResponseWithAmountAndFee(response, transaction);
+		}
+	}
+
+	private void caseBeforeToday(String channel, TransactionStatus response,
+			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
+		response.setSettledStatus();
+		if (isClientOrAtm(channel)) {
+			fillResponseWithAmountLessFee(response, transaction);
+		} else if (isInternal(channel)) {
+			fillResponseWithAmountAndFee(response, transaction);
+		}
+	}
+	
+	private boolean isAtm(String channel) {
+		return StringUtils.equals(channel, "ATM");
+	}
+
+	private boolean isClient(String channel) {
+		return StringUtils.equals(channel, "CLIENT");
+	}
+
+	private boolean isInternal(String channel) {
+		return StringUtils.equals(channel, "INTERNAL");
+	}
+
+	private boolean isClientOrAtm(String channel) {
+		return isClient(channel) || isAtm(channel);
+	}
+	
+	private void fillResponseWithAmountLessFee(TransactionStatus response,
+			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
+		response.setAmount(transaction.getAmount() - transaction.getFee());
+	}
+
+	private void fillResponseWithAmountAndFee(TransactionStatus response,
+			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
+		response.setAmount(transaction.getAmount());
+		response.setFee(transaction.getFee());
 	}
 }
