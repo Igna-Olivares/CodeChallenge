@@ -6,7 +6,6 @@ import static com.iolivares.codeChallenge.bank.controller.TransactionController.
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,7 +25,6 @@ import com.iolivares.codeChallenge.common.configuration.SwaggerConfiguration;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import lombok.Setter;
 import ma.glasnost.orika.MapperFacade;
 
 @RestController
@@ -38,29 +36,53 @@ public class TransactionController {
 	public static final String TRANSACTIONS_PATH = "/transactions-manager";
 	public static final String TRANSACTIONS_TAG = "Transactions Manager";
 	
-	@Setter
-	@Autowired
-	private MapperFacade defaultMapper;
+	private final MapperFacade defaultMapper;
 	
-	@Autowired
-	private TransactionService transactionService;
+	private final TransactionService transactionService;
 	
+	public TransactionController(MapperFacade defaultMapper, TransactionService transactionService) {
+		this.defaultMapper = defaultMapper;
+		this.transactionService = transactionService;
+	}
+	
+	/**
+	 * Get transactions filtered
+	 * 
+	 * @param account_iban The IBAN number of the account where the transaction has happened
+	 * @param direction Amount Ordering direction
+	 * @return List<Transaction> - list of transactions
+	 */
 	@ResponseStatus(HttpStatus.OK)
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE, value = "")
 	@ApiOperation(value = "Get transactions filtered")
-	public List<Transaction> getTransactions( @RequestParam(required = false) String account_iban, @ApiParam("Permited values ASC/DESC") @RequestParam(required = false) String direction) {
+	public List<Transaction> getTransactions(@ApiParam("The IBAN number of the account where the transaction has happened") @RequestParam(required = false) String account_iban, @ApiParam("Amount Ordering direction. It can be any of these values:ASC,DESC") @RequestParam(required = false) String direction) {
 
 		return defaultMapper.mapAsList(transactionService.searchTransactions(account_iban, direction), Transaction.class);
 	}
 	
+	
+	/**
+	 * Get the transactions status
+	 * 
+	 * @param reference The transaction reference number
+	 * @param channel Amount The type of the channel that is asking for the status direction
+	 * @return TransactionStatus - the transaction status detail info
+	 */
 	@ResponseStatus(HttpStatus.OK)
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE, value = "/transaction-status")
 	@ApiOperation(value = "Get transactions status")
-	public TransactionStatus getTransactionsStatus( @RequestParam String reference, @RequestParam TransactionChannels channel) {
+	public TransactionStatus getTransactionsStatus(
+			@ApiParam("The transaction reference number") @RequestParam String reference, @ApiParam("The type of the channel that is asking for the status. It can be any of these values: CLIENT, ATM, INTERNAL") @RequestParam(required = false) TransactionChannels channel) {
 
-		return defaultMapper.map(transactionService.searchTransactionStatus(reference, channel.getCode()), TransactionStatus.class);
+		return defaultMapper.map(transactionService.searchTransactionStatus(reference, channel), TransactionStatus.class);
 	}
 	
+	/**
+	 * Create new Transactions
+	 * 
+	 * @param CreateTransactionCommand The transaction objecto with all his parameters
+	 * @return Transaction - the new transaction object
+	 */
 	@ResponseStatus(HttpStatus.OK)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, value = "")
 	@ApiOperation(value = "Create new Transactions")

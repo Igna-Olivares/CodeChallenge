@@ -9,11 +9,11 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.iolivares.codeChallenge.bank.enumerations.TransactionChannels;
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
 import com.iolivares.codeChallenge.bank.model.repository.Account;
 import com.iolivares.codeChallenge.bank.model.service.Transaction;
@@ -25,7 +25,6 @@ import com.iolivares.codeChallenge.bank.validators.CreateTransactionValidator;
 import com.iolivares.codeChallenge.common.exceptions.TechnicalException;
 import com.iolivares.codeChallenge.common.utils.DateUtils;
 
-import lombok.Setter;
 import ma.glasnost.orika.MapperFacade;
 
 @Service
@@ -35,34 +34,44 @@ public class TransactionServiceImpl implements TransactionService {
 	private static final int EQUALS_TODAY = 0;
 	private static final int BEFORE_TODAY = -1;
 
-	@Setter
-	@Autowired
-	private MapperFacade defaultMapper;
+	private final MapperFacade defaultMapper;
 
-	@Autowired
-	private TransactionRepository transactionRepository;
+	private final TransactionRepository transactionRepository;
 
-	@Autowired
-	private AccountRepository accountRepository;
+	private final AccountRepository accountRepository;
 
-	@Autowired
-	private CreateTransactionValidator transactionValidator;
+	private final CreateTransactionValidator transactionValidator;
+	
+	public TransactionServiceImpl(MapperFacade defaultMapper, TransactionRepository transactionRepository, AccountRepository accountRepository, CreateTransactionValidator transactionValidator) {
+		this.defaultMapper = defaultMapper;
+		this.transactionRepository = transactionRepository;
+		this.accountRepository = accountRepository;
+		this.transactionValidator = transactionValidator;
+	}
 
+	
 	@Override
 	public Transaction createTransaction(CreateTransactionCommand newTransaction) {
 
+		// * 1. Validate the required values and formats *//
 		List<String> errorList = transactionValidator.validate(newTransaction);
 		if (CollectionUtils.isNotEmpty(errorList)) {
 			throw new TechnicalException("Create Transaction validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY,	errorList);
 		}
+		
+		// * 2. Find the existence of the destination account *//
 		Account account = accountRepository.findByIban(newTransaction.getAccount_iban());
 		if (account == null) {
 			throw new TechnicalException("There is no account associated with that IBAN", HttpStatus.SC_NOT_FOUND);
 		}
+		
+		// * 3. Validate if the balance could be less than 0 *//
 		List<String> accountErrorList = transactionValidator.validateAccountBalance(newTransaction, account.getBalance());
 		if (CollectionUtils.isNotEmpty(accountErrorList)) {
 			throw new TechnicalException("Create Transaction balance validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY,	accountErrorList);
 		}
+		
+		// * 4. Check if they give us the reference and validate that it does not already exist *//
 		if (StringUtils.isNotEmpty(newTransaction.getReference())
 				&& !validateReference(newTransaction.getReference())) {
 			throw new TechnicalException("Create Transaction reference already exist",
@@ -70,13 +79,19 @@ public class TransactionServiceImpl implements TransactionService {
 		} else if(StringUtils.isEmpty(newTransaction.getReference())) {
 			newTransaction.setReference(generateReference());
 		}
+		
+		// * 5. Map to the repository object and check if it is necessary to generate the transaction date. Update the value of te balance of the account *//
 		com.iolivares.codeChallenge.bank.model.repository.Transaction transactionToCreate = defaultMapper.map(newTransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class);
 		if(transactionToCreate.getDate() == null) {
 			transactionToCreate.setDate(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
 		}
+		account.setBalance(account.getBalance() + (newTransaction.getAmount() - newTransaction.getFee()));
 
+		// * 6. Save the object and update the account balance *//
 		com.iolivares.codeChallenge.bank.model.repository.Transaction transactionSaved = transactionRepository.save(transactionToCreate);
+		accountRepository.save(account);
 		
+		// * 7. Return the new transaction object *//
 		return defaultMapper.map(transactionSaved, Transaction.class);
 
 	}
@@ -84,17 +99,21 @@ public class TransactionServiceImpl implements TransactionService {
 
 	@Override
 	public List<Transaction> searchTransactions(String iban, String direction) {
+		
+		// * 1. Set up the sorting if it is necessary *//
 		Sort sort = null;
 		if(StringUtils.isNotEmpty(direction))
 		sort = Sort.by(Direction.valueOf(direction), "amount");
 
+		// * 2. Find the transactions *//
 		return defaultMapper.mapAsList(transactionRepository.findByAccountIban(iban, sort),
 				Transaction.class);
 	}
 
 	@Override
-	public TransactionStatus searchTransactionStatus(String reference, String channel) {
+	public TransactionStatus searchTransactionStatus(String reference, TransactionChannels channel) {
 
+		// * 1. Check if the transaction exist *//
 		Optional<com.iolivares.codeChallenge.bank.model.repository.Transaction> repositoryTransaction = transactionRepository
 				.findById(reference);
 
@@ -103,6 +122,7 @@ public class TransactionServiceImpl implements TransactionService {
 		if (!repositoryTransaction.isPresent()) {
 			response.setInvalidStatus();
 		} else {
+			// * 2. If the transaction exists, enter the business logic *//
 			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction = repositoryTransaction.get();
 			int dateValue = DateUtils.compareDatesToNow(transaction.getDate());
 			switch (dateValue) {
@@ -125,6 +145,13 @@ public class TransactionServiceImpl implements TransactionService {
 	// PRIVATE METHODS//
 	///////////////////
 
+	
+	/**
+	 * Generates a random alphanumeric String of size 6
+	 *  until is valid as reference for transaction
+	 * 
+	 * @return String - new unique reference
+	 */
 	private String generateReference() {
 		boolean isValid = false;
 		String randomReference = null;
@@ -135,12 +162,20 @@ public class TransactionServiceImpl implements TransactionService {
 		return randomReference;
 	}
 
-	private boolean validateReference(String randomReference) {
+	/**
+	 * Check if the reference given is used for another transaction
+	 * 
+	 * @return Boolean - true if is not present
+	 */
+	private Boolean validateReference(String randomReference) {
 		return !transactionRepository.findById(randomReference).isPresent();
 	}
 
-
-	private void caseAfterToday(String channel, TransactionStatus response,
+	/**
+	 * Fill the transaction status in the case of his date is after today
+	 * 
+	 */
+	private void caseAfterToday(TransactionChannels channel, TransactionStatus response,
 			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
 		if (isClient(channel)) {
 			response.setFutureStatus();
@@ -154,7 +189,11 @@ public class TransactionServiceImpl implements TransactionService {
 		}
 	}
 
-	private void caseEqualsToday(String channel, TransactionStatus response,
+	/**
+	 * Fill the transaction status in the case of his date is equals to today
+	 * 
+	 */
+	private void caseEqualsToday(TransactionChannels channel, TransactionStatus response,
 			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
 		response.setPendingStatus();
 		if (isClientOrAtm(channel)) {
@@ -164,7 +203,11 @@ public class TransactionServiceImpl implements TransactionService {
 		}
 	}
 
-	private void caseBeforeToday(String channel, TransactionStatus response,
+	/**
+	 * Fill the transaction status in the case of his date is before today
+	 * 
+	 */
+	private void caseBeforeToday(TransactionChannels channel, TransactionStatus response,
 			com.iolivares.codeChallenge.bank.model.repository.Transaction transaction) {
 		response.setSettledStatus();
 		if (isClientOrAtm(channel)) {
@@ -174,19 +217,19 @@ public class TransactionServiceImpl implements TransactionService {
 		}
 	}
 	
-	private boolean isAtm(String channel) {
-		return StringUtils.equals(channel, "ATM");
+	private boolean isAtm(TransactionChannels channel) {
+		return channel.equals(TransactionChannels.ATM);
 	}
 
-	private boolean isClient(String channel) {
-		return StringUtils.equals(channel, "CLIENT");
+	private boolean isClient(TransactionChannels channel) {
+		return channel.equals(TransactionChannels.CLIENT);
 	}
 
-	private boolean isInternal(String channel) {
-		return StringUtils.equals(channel, "INTERNAL");
+	private boolean isInternal(TransactionChannels channel) {
+		return channel.equals(TransactionChannels.INTERNAL);
 	}
 
-	private boolean isClientOrAtm(String channel) {
+	private boolean isClientOrAtm(TransactionChannels channel) {
 		return isClient(channel) || isAtm(channel);
 	}
 	

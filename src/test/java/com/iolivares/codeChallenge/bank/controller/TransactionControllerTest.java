@@ -10,7 +10,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -31,7 +30,6 @@ public class TransactionControllerTest {
 
 	private OrikaConfiguration orikaConfiguration = new OrikaConfiguration();
 
-	@InjectMocks
 	private TransactionController transactionController;
 
 	@Mock
@@ -39,7 +37,7 @@ public class TransactionControllerTest {
 
 	@Before
 	public void setUp() {
-		transactionController.setDefaultMapper(orikaConfiguration.defaultMapper());
+		transactionController = new TransactionController(orikaConfiguration.defaultMapper(), transactionService);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -68,7 +66,7 @@ public class TransactionControllerTest {
 				.manufacturePojo(com.iolivares.codeChallenge.bank.model.service.TransactionStatus.class);
 
 		// When
-		when(transactionService.searchTransactionStatus(anyString(), anyString())).thenReturn(mockedTransactionStatus);
+		when(transactionService.searchTransactionStatus("12345A", TransactionChannels.ATM)).thenReturn(mockedTransactionStatus);
 		TransactionStatus response = transactionController.getTransactionsStatus("12345A", TransactionChannels.ATM);
 
 		// Then

@@ -20,12 +20,12 @@ import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.iolivares.codeChallenge.CodeChallengeApplication;
+import com.iolivares.codeChallenge.bank.enumerations.TransactionChannels;
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
 import com.iolivares.codeChallenge.bank.model.repository.Account;
 import com.iolivares.codeChallenge.bank.model.service.Transaction;
@@ -49,8 +49,7 @@ public class TransactionsServiceTest {
 
 	OrikaConfiguration orikaConfiguration = new OrikaConfiguration();
 
-	@InjectMocks
-	private TransactionServiceImpl transactionService;
+	private TransactionService transactionService;
 
 	@Mock
 	private TransactionRepository transactionRepository;
@@ -63,7 +62,7 @@ public class TransactionsServiceTest {
 
 	@Before
 	public void setUp() {
-		transactionService.setDefaultMapper(orikaConfiguration.defaultMapper());
+		transactionService = new TransactionServiceImpl(orikaConfiguration.defaultMapper(),transactionRepository, accountRepository, transactionValidator);
 	}
 
 	@Test
@@ -267,7 +266,7 @@ public class TransactionsServiceTest {
 		
 		// Given
 		String reference = "XXXXXX";
-		String channel = "CLIENT";
+		TransactionChannels channel = TransactionChannels.CLIENT;
 
 		// When
 		when(transactionRepository.findById(anyString())).thenReturn(Optional.empty());
@@ -282,7 +281,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseB_ChannelClient() {
 		// Given
 		String reference = "12345A";
-		String channel = "CLIENT";
+		TransactionChannels channel = TransactionChannels.CLIENT;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -305,7 +304,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseB_ChannelATM() {
 		// Given
 		String reference = "12345A";
-		String channel = "ATM";
+		TransactionChannels channel = TransactionChannels.ATM;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -328,7 +327,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseC() {
 		// Given
 		String reference = "12345A";
-		String channel = "INTERNAL";
+		TransactionChannels channel = TransactionChannels.INTERNAL;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -352,7 +351,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseD_ChannelClient() {
 		// Given
 		String reference = "12345A";
-		String channel = "CLIENT";
+		TransactionChannels channel = TransactionChannels.CLIENT;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -375,7 +374,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseD_ChannelATM() {
 		// Given
 		String reference = "12345A";
-		String channel = "ATM";
+		TransactionChannels channel = TransactionChannels.ATM;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -398,7 +397,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseE() {
 		// Given
 		String reference = "12345A";
-		String channel = "INTERNAL";
+		TransactionChannels channel = TransactionChannels.INTERNAL;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -422,7 +421,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseF() {
 		// Given
 		String reference = "12345A";
-		String channel = "CLIENT";
+		TransactionChannels channel = TransactionChannels.CLIENT;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -445,7 +444,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseG() {
 		// Given
 		String reference = "12345A";
-		String channel = "ATM";
+		TransactionChannels channel = TransactionChannels.ATM;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
@@ -468,7 +467,7 @@ public class TransactionsServiceTest {
 	public void testTransactionStatusCaseH() {
 		// Given
 		String reference = "12345A";
-		String channel = "INTERNAL";
+		TransactionChannels channel = TransactionChannels.INTERNAL;
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
