@@ -1,5 +1,7 @@
 package com.iolivares.codeChallenge.bank.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,7 +49,7 @@ public class TransactionServiceImpl implements TransactionService {
 	private CreateTransactionValidator transactionValidator;
 
 	@Override
-	public void createTransaction(CreateTransactionCommand newTransaction) {
+	public Transaction createTransaction(CreateTransactionCommand newTransaction) {
 
 		List<String> errorList = transactionValidator.validate(newTransaction);
 		if (CollectionUtils.isNotEmpty(errorList)) {
@@ -61,25 +63,32 @@ public class TransactionServiceImpl implements TransactionService {
 		if (CollectionUtils.isNotEmpty(accountErrorList)) {
 			throw new TechnicalException("Create Transaction balance validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY,	accountErrorList);
 		}
-
 		if (StringUtils.isNotEmpty(newTransaction.getReference())
 				&& !validateReference(newTransaction.getReference())) {
 			throw new TechnicalException("Create Transaction reference already exist",
 					HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
-		} else {
+		} else if(StringUtils.isEmpty(newTransaction.getReference())) {
 			newTransaction.setReference(generateReference());
 		}
+		com.iolivares.codeChallenge.bank.model.repository.Transaction transactionToCreate = defaultMapper.map(newTransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class);
+		if(transactionToCreate.getDate() == null) {
+			transactionToCreate.setDate(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+		}
 
-		transactionRepository.save(
-				defaultMapper.map(newTransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class));
+		com.iolivares.codeChallenge.bank.model.repository.Transaction transactionSaved = transactionRepository.save(transactionToCreate);
+		
+		return defaultMapper.map(transactionSaved, Transaction.class);
 
 	}
 
 
 	@Override
-	public List<Transaction> searchTransactions(String iban, Direction direction) {
+	public List<Transaction> searchTransactions(String iban, String direction) {
+		Sort sort = null;
+		if(StringUtils.isNotEmpty(direction))
+		sort = Sort.by(Direction.valueOf(direction), "amount");
 
-		return defaultMapper.mapAsList(transactionRepository.findByAccountIban(iban, Sort.by(direction, "amount")),
+		return defaultMapper.mapAsList(transactionRepository.findByAccountIban(iban, sort),
 				Transaction.class);
 	}
 

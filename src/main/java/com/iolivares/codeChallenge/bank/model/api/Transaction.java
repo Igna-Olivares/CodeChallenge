@@ -1,4 +1,4 @@
-package com.iolivares.codeChallenge.bank.model.service;
+package com.iolivares.codeChallenge.bank.model.api;
 
 import lombok.Getter;
 import lombok.Setter;

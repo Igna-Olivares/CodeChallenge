@@ -78,6 +78,26 @@ public class CreateTransactionValidatorTest {
 	}
 	
 	@Test
+	public void testValidateDateFormatError() {
+		
+		// Given
+		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+		newTransaction.setAccount_iban("ES9820385778983000760236");
+		newTransaction.setDate("2019-07-16");
+		newTransaction.setAmount(193.38);
+		newTransaction.setFee(3.18);
+		newTransaction.setDescription("Restaurant payment");
+		
+		// When
+		List<String> errors = validator.validate(newTransaction);
+		
+		// Then
+		assertThat(errors).isNotNull();
+		assertThat(errors).isNotEmpty();
+		assertEquals("The Date format is incorrect", errors.get(0));
+	}
+	
+	@Test
 	public void testValidateAccountBalanceOk() {
 		
 		// Given

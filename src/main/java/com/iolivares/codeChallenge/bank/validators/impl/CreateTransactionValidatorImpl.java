@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.GenericValidator;
 import org.springframework.stereotype.Component;
 
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
@@ -11,6 +12,8 @@ import com.iolivares.codeChallenge.bank.validators.CreateTransactionValidator;
 
 @Component
 public class CreateTransactionValidatorImpl implements CreateTransactionValidator {
+	
+	private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
 	@Override
 	public List<String> validate(CreateTransactionCommand newTransaction) {
@@ -23,7 +26,11 @@ public class CreateTransactionValidatorImpl implements CreateTransactionValidato
 		
 		if(newTransaction.getAmount() == null) {
 			errorList.add("The Amount is required");
-		}	
+		}
+		
+		if(StringUtils.isNotEmpty(newTransaction.getDate()) && !GenericValidator.isDate(newTransaction.getDate(), DATE_FORMAT, false)){
+			errorList.add("The Date format is incorrect");
+		}
 			
 		return errorList;
 	}

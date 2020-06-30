@@ -21,7 +21,7 @@ public class Transaction {
 	@Column(name = "account_iban")
 	private String accountIban;
 
-	private long date;
+	private Long date;
 
 	private Double amount;
 

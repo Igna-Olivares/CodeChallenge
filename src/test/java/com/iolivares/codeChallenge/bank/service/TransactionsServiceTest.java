@@ -24,7 +24,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Sort.Direction;
 
 import com.iolivares.codeChallenge.CodeChallengeApplication;
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
@@ -94,7 +93,38 @@ public class TransactionsServiceTest {
 		com.iolivares.codeChallenge.bank.model.repository.Transaction createdTransaction = transactionCaptor.getValue();
 		assertThat(createdTransaction.getReference()).isNotNull();
 		assertEquals(createdTransaction.getAccountIban(), "ES9820385778983000760236");
-		assertEquals(createdTransaction.getDate(), DateUtils.StringDateToLong("2019-07-16T16:55:42.000Z"));
+		assertEquals(createdTransaction.getDate(), DateUtils.StringDateToLong("2019-07-16T16:55:42.000Z"), 0.01);
+		assertEquals(createdTransaction.getAmount(), 193.38, 0.01);
+		assertEquals(createdTransaction.getFee(), 3.18, 0.01);
+		assertEquals(createdTransaction.getDescription(), "Restaurant payment");
+	}
+	
+	@Test
+	public void testCreateTransactionNoDateOk() {
+
+		// Given
+		Account mockedAccount = new Account();
+		mockedAccount.setBalance(5000.0);
+		mockedAccount.setIban("ES9820385778983000760236");
+		mockedAccount.setHolder("Ignacio");
+
+		CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+		newTransaction.setAccount_iban("ES9820385778983000760236");
+		newTransaction.setAmount(193.38);
+		newTransaction.setFee(3.18);
+		newTransaction.setDescription("Restaurant payment");
+
+		// When
+		when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
+		when(transactionRepository.findById(anyString())).thenReturn(Optional.empty());
+		transactionService.createTransaction(newTransaction);
+
+		// Then
+		ArgumentCaptor<com.iolivares.codeChallenge.bank.model.repository.Transaction> transactionCaptor = ArgumentCaptor.forClass(com.iolivares.codeChallenge.bank.model.repository.Transaction.class);
+		verify(transactionRepository).save(transactionCaptor.capture());
+		com.iolivares.codeChallenge.bank.model.repository.Transaction createdTransaction = transactionCaptor.getValue();
+		assertThat(createdTransaction.getReference()).isNotNull();
+		assertEquals(createdTransaction.getAccountIban(), "ES9820385778983000760236");
 		assertEquals(createdTransaction.getAmount(), 193.38, 0.01);
 		assertEquals(createdTransaction.getFee(), 3.18, 0.01);
 		assertEquals(createdTransaction.getDescription(), "Restaurant payment");
@@ -224,7 +254,7 @@ public class TransactionsServiceTest {
 		
 		// When
 		when(transactionRepository.findByAccountIban(any(), any())).thenReturn(mockedTransactions);
-		List<Transaction> response = transactionService.searchTransactions("12345A", Direction.ASC);
+		List<Transaction> response = transactionService.searchTransactions("12345A", "ASC");
 		
 		// Then
 		assertThat(response).isNotNull();

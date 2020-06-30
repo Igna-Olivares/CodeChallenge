@@ -1,5 +1,6 @@
 package com.iolivares.codeChallenge.common.configuration;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,7 +33,27 @@ public class OrikaConfiguration {
 									com.iolivares.codeChallenge.bank.model.repository.Transaction b,
 									MappingContext context) {
 								super.mapAtoB(a, b, context);
-								b.setDate(DateUtils.StringDateToLong(a.getDate()));
+								if(StringUtils.isNotEmpty(a.getDate())){
+									b.setDate(DateUtils.StringDateToLong(a.getDate()));
+								}
+							}
+						})
+				. //
+				register();
+		
+		factory.classMap(com.iolivares.codeChallenge.bank.model.repository.Transaction.class,
+				com.iolivares.codeChallenge.bank.model.service.Transaction.class). //
+				exclude("date").
+				field("accountIban", "account_iban").
+				byDefault(). //
+				customize(
+						new CustomMapper<com.iolivares.codeChallenge.bank.model.repository.Transaction, com.iolivares.codeChallenge.bank.model.service.Transaction>() {
+							@Override
+							public void mapAtoB(com.iolivares.codeChallenge.bank.model.repository.Transaction a,
+									com.iolivares.codeChallenge.bank.model.service.Transaction b,
+									MappingContext context) {
+								super.mapAtoB(a, b, context);
+								b.setDate(DateUtils.LongDateToString(a.getDate()));
 							}
 						})
 				. //

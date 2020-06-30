@@ -50,7 +50,7 @@ public class TransactionRepositoryIT {
 		assertThat(result).isNotNull();
 		assertEquals(result.getReference(), "12345A");
 		assertEquals(result.getAccountIban(), "ES9820385778983000760236");
-		assertEquals(result.getDate(), LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+		assertEquals(result.getDate(), LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli(), 0.01);
 		assertEquals(result.getAmount(), 193.38, 0.01);
 		assertEquals(result.getFee(), 3.18, 0.01);
 		assertEquals(result.getDescription(), "Restaurant payment");
