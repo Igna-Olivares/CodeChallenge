@@ -93,7 +93,7 @@ public class TransactionsServiceTest {
 		verify(transactionRepository).save(transactionCaptor.capture());
 		com.iolivares.codeChallenge.bank.model.repository.Transaction createdTransaction = transactionCaptor.getValue();
 		assertThat(createdTransaction.getReference()).isNotNull();
-		assertEquals(createdTransaction.getAccount_iban(), "ES9820385778983000760236");
+		assertEquals(createdTransaction.getAccountIban(), "ES9820385778983000760236");
 		assertEquals(createdTransaction.getDate(), DateUtils.StringDateToLong("2019-07-16T16:55:42.000Z"));
 		assertEquals(createdTransaction.getAmount(), 193.38, 0.01);
 		assertEquals(createdTransaction.getFee(), 3.18, 0.01);
@@ -138,15 +138,9 @@ public class TransactionsServiceTest {
 			mockedAccount.setHolder("Ignacio");
 
 			CreateTransactionCommand newTransaction = new CreateTransactionCommand();
-			newTransaction.setReference("12345A");
-			newTransaction.setAccount_iban("ES9820385778983000760236");
-			newTransaction.setDate("2019-07-16T16:55:42.000Z");
-			newTransaction.setFee(3.18);
-			newTransaction.setDescription("Restaurant payment");
 
 			// When
-			when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
-			when(transactionValidator.validate(newTransaction, 5000.0))
+			when(transactionValidator.validate(newTransaction))
 					.thenReturn(Arrays.asList("The Amount is required"));
 			transactionService.createTransaction(newTransaction);
 
@@ -155,6 +149,39 @@ public class TransactionsServiceTest {
 		// Then
 		assertTrue(exception.getMessage().contains("Create Transaction validation error"));
 	}
+	
+	@Test
+	public void testCreateTransactionBalanceValidationError() {
+
+		// Expected exception
+		TechnicalException exception = Assertions.assertThrows(TechnicalException.class, () -> {
+
+			// Given
+			Account mockedAccount = new Account();
+			mockedAccount.setBalance(1000.0);
+			mockedAccount.setIban("ES9820385778983000760236");
+			mockedAccount.setHolder("Ignacio");
+
+			CreateTransactionCommand newTransaction = new CreateTransactionCommand();
+			newTransaction.setReference("12345A");
+			newTransaction.setAccount_iban("ES9820385778983000760236");
+			newTransaction.setDate("2019-07-16T16:55:42.000Z");
+			newTransaction.setAmount(-1193.38);
+			newTransaction.setFee(3.18);
+			newTransaction.setDescription("Restaurant payment");
+			
+			// When
+			when(accountRepository.findByIban(anyString())).thenReturn(mockedAccount);
+			when(transactionValidator.validateAccountBalance(newTransaction,1000.0 ))
+					.thenReturn(Arrays.asList("A transaction can't leaves the total account balance bellow 0"));
+			transactionService.createTransaction(newTransaction);
+
+		});
+
+		// Then
+		assertTrue(exception.getMessage().contains("Create Transaction balance validation error"));
+	}
+
 
 	@Test
 	public void testCreateTransactionReferenceError() {
@@ -196,7 +223,7 @@ public class TransactionsServiceTest {
 		List<com.iolivares.codeChallenge.bank.model.repository.Transaction> mockedTransactions = factory.manufacturePojoWithFullData(ArrayList.class, com.iolivares.codeChallenge.bank.model.repository.Transaction.class);
 		
 		// When
-		when(transactionRepository.findByAccount_iban(any(), any())).thenReturn(mockedTransactions);
+		when(transactionRepository.findByAccountIban(any(), any())).thenReturn(mockedTransactions);
 		List<Transaction> response = transactionService.searchTransactions("12345A", Direction.ASC);
 		
 		// Then
@@ -228,7 +255,7 @@ public class TransactionsServiceTest {
 		String channel = "CLIENT";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
 		mockedTransaction.setFee(3.18);
@@ -251,7 +278,7 @@ public class TransactionsServiceTest {
 		String channel = "ATM";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
 		mockedTransaction.setFee(3.18);
@@ -274,7 +301,7 @@ public class TransactionsServiceTest {
 		String channel = "INTERNAL";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
 		mockedTransaction.setFee(3.18);
@@ -298,7 +325,7 @@ public class TransactionsServiceTest {
 		String channel = "CLIENT";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //today on long
 		mockedTransaction.setFee(3.18);
@@ -321,7 +348,7 @@ public class TransactionsServiceTest {
 		String channel = "ATM";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //today on long
 		mockedTransaction.setFee(3.18);
@@ -344,7 +371,7 @@ public class TransactionsServiceTest {
 		String channel = "INTERNAL";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //today on long
 		mockedTransaction.setFee(3.18);
@@ -368,7 +395,7 @@ public class TransactionsServiceTest {
 		String channel = "CLIENT";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().plusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
 		mockedTransaction.setFee(3.18);
@@ -391,7 +418,7 @@ public class TransactionsServiceTest {
 		String channel = "ATM";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().plusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
 		mockedTransaction.setFee(3.18);
@@ -414,7 +441,7 @@ public class TransactionsServiceTest {
 		String channel = "INTERNAL";
 		com.iolivares.codeChallenge.bank.model.repository.Transaction mockedTransaction = new com.iolivares.codeChallenge.bank.model.repository.Transaction();
 		mockedTransaction.setReference("12345A");
-		mockedTransaction.setAccount_iban("ES9820385778983000760236");
+		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
 		mockedTransaction.setDate(LocalDate.now().plusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
 		mockedTransaction.setFee(3.18);

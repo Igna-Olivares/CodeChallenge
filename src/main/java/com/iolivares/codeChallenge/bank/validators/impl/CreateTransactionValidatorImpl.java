@@ -13,7 +13,7 @@ import com.iolivares.codeChallenge.bank.validators.CreateTransactionValidator;
 public class CreateTransactionValidatorImpl implements CreateTransactionValidator {
 
 	@Override
-	public List<String> validate(CreateTransactionCommand newTransaction, Double accountBalance) {
+	public List<String> validate(CreateTransactionCommand newTransaction) {
 		
 		List<String> errorList = new ArrayList<>();
 		
@@ -23,7 +23,15 @@ public class CreateTransactionValidatorImpl implements CreateTransactionValidato
 		
 		if(newTransaction.getAmount() == null) {
 			errorList.add("The Amount is required");
-		}
+		}	
+			
+		return errorList;
+	}
+
+	@Override
+	public List<String> validateAccountBalance(CreateTransactionCommand newTransaction, Double accountBalance) {
+		
+		List<String> errorList = new ArrayList<>();
 		
 		if(newTransaction.getAmount() != null && (accountBalance + newTransaction.getAmount() <= 0) ) {
 			errorList.add("A transaction can't leaves the total account balance bellow 0");
@@ -32,7 +40,7 @@ public class CreateTransactionValidatorImpl implements CreateTransactionValidato
 		if(newTransaction.getFee() != null && (accountBalance + (newTransaction.getAmount() - newTransaction.getFee()) <= 0) ) {
 			errorList.add("A transaction minus the fee can't leaves the total account balance bellow 0");
 		}
-			
+		
 		return errorList;
 	}
 

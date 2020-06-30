@@ -23,6 +23,7 @@ public class OrikaConfiguration {
 		factory.classMap(com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand.class,
 				com.iolivares.codeChallenge.bank.model.repository.Transaction.class). //
 				exclude("date").
+				field("account_iban", "accountIban").
 				byDefault(). //
 				customize(
 						new CustomMapper<com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand, com.iolivares.codeChallenge.bank.model.repository.Transaction>() {

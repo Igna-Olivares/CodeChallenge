@@ -47,36 +47,39 @@ public class TransactionServiceImpl implements TransactionService {
 	private CreateTransactionValidator transactionValidator;
 
 	@Override
-	public void createTransaction(CreateTransactionCommand newtransaction) {
+	public void createTransaction(CreateTransactionCommand newTransaction) {
 
-		Account account = accountRepository.findByIban(newtransaction.getAccount_iban());
+		List<String> errorList = transactionValidator.validate(newTransaction);
+		if (CollectionUtils.isNotEmpty(errorList)) {
+			throw new TechnicalException("Create Transaction validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY,	errorList);
+		}
+		Account account = accountRepository.findByIban(newTransaction.getAccount_iban());
 		if (account == null) {
 			throw new TechnicalException("There is no account associated with that IBAN", HttpStatus.SC_NOT_FOUND);
 		}
-
-		List<String> errorList = transactionValidator.validate(newtransaction, account.getBalance());
-		if (CollectionUtils.isNotEmpty(errorList)) {
-			throw new TechnicalException("Create Transaction validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY,
-					errorList);
+		List<String> accountErrorList = transactionValidator.validateAccountBalance(newTransaction, account.getBalance());
+		if (CollectionUtils.isNotEmpty(accountErrorList)) {
+			throw new TechnicalException("Create Transaction balance validation error", HttpStatus.SC_UNPROCESSABLE_ENTITY,	accountErrorList);
 		}
 
-		if (StringUtils.isNotEmpty(newtransaction.getReference())
-				&& !validateReference(newtransaction.getReference())) {
+		if (StringUtils.isNotEmpty(newTransaction.getReference())
+				&& !validateReference(newTransaction.getReference())) {
 			throw new TechnicalException("Create Transaction reference already exist",
 					HttpStatus.SC_UNPROCESSABLE_ENTITY, errorList);
 		} else {
-			newtransaction.setReference(generateReference());
+			newTransaction.setReference(generateReference());
 		}
 
 		transactionRepository.save(
-				defaultMapper.map(newtransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class));
+				defaultMapper.map(newTransaction, com.iolivares.codeChallenge.bank.model.repository.Transaction.class));
 
 	}
+
 
 	@Override
 	public List<Transaction> searchTransactions(String iban, Direction direction) {
 
-		return defaultMapper.mapAsList(transactionRepository.findByAccount_iban(iban, Sort.by(direction, "amount")),
+		return defaultMapper.mapAsList(transactionRepository.findByAccountIban(iban, Sort.by(direction, "amount")),
 				Transaction.class);
 	}
 

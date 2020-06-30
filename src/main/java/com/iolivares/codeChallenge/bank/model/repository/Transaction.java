@@ -18,7 +18,8 @@ public class Transaction {
 	@Column(length = 6)
 	private String reference;
 
-	private String account_iban;
+	@Column(name = "account_iban")
+	private String accountIban;
 
 	private long date;
 
