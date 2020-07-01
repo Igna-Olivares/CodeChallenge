@@ -72,7 +72,7 @@ public class TransactionController {
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE, value = "/transaction-status")
 	@ApiOperation(value = "Get transactions status")
 	public TransactionStatus getTransactionsStatus(
-			@ApiParam("The transaction reference number") @RequestParam String reference, @ApiParam("The type of the channel that is asking for the status. It can be any of these values: CLIENT, ATM, INTERNAL") @RequestParam(required = false) TransactionChannels channel) {
+			@ApiParam("The transaction reference number") @RequestParam String reference, @RequestParam(required = false) TransactionChannels channel) {
 
 		return defaultMapper.map(transactionService.searchTransactionStatus(reference, channel), TransactionStatus.class);
 	}
