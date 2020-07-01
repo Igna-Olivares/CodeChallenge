@@ -101,13 +101,13 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Override
-	public List<Transaction> searchTransactions(String iban, String direction) {
+	public List<Transaction> searchTransactions(String iban, Direction direction) {
 
 		// * 1. Set up the sorting if it is necessary *//
 		Sort sort = null;
-		if (StringUtils.isNotEmpty(direction))
-			sort = Sort.by(Direction.valueOf(direction), "amount");
-
+		if (direction != null) {
+			sort = Sort.by(direction, "amount");
+		}
 		// * 2. Find the transactions *//
 		return defaultMapper.mapAsList(transactionRepository.findByAccountIban(iban, sort), Transaction.class);
 	}
@@ -215,15 +215,15 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	private boolean isAtm(TransactionChannels channel) {
-		return channel.equals(TransactionChannels.ATM);
+		return channel != null && channel.equals(TransactionChannels.ATM);
 	}
 
 	private boolean isClient(TransactionChannels channel) {
-		return channel.equals(TransactionChannels.CLIENT);
+		return channel != null && channel.equals(TransactionChannels.CLIENT);
 	}
 
 	private boolean isInternal(TransactionChannels channel) {
-		return channel.equals(TransactionChannels.INTERNAL);
+		return channel != null && channel.equals(TransactionChannels.INTERNAL);
 	}
 
 	private boolean isClientOrAtm(TransactionChannels channel) {

@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort.Direction;
 
 import com.iolivares.codeChallenge.CodeChallengeApplication;
 import com.iolivares.codeChallenge.bank.enumerations.TransactionChannels;
@@ -253,7 +254,7 @@ public class TransactionsServiceTest {
 		
 		// When
 		when(transactionRepository.findByAccountIban(any(), any())).thenReturn(mockedTransactions);
-		List<Transaction> response = transactionService.searchTransactions("12345A", "ASC");
+		List<Transaction> response = transactionService.searchTransactions("12345A", Direction.ASC);
 		
 		// Then
 		assertThat(response).isNotNull();

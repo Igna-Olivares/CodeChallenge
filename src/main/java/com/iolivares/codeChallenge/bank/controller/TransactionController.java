@@ -6,6 +6,7 @@ import static com.iolivares.codeChallenge.bank.controller.TransactionController.
 
 import java.util.List;
 
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,7 +56,7 @@ public class TransactionController {
 	@ResponseStatus(HttpStatus.OK)
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE, value = "")
 	@ApiOperation(value = "Get transactions filtered")
-	public List<Transaction> getTransactions(@ApiParam("The IBAN number of the account where the transaction has happened") @RequestParam(required = false) String account_iban, @ApiParam("Amount Ordering direction. It can be any of these values:ASC,DESC") @RequestParam(required = false) String direction) {
+	public List<Transaction> getTransactions(@ApiParam("The IBAN number of the account where the transaction has happened") @RequestParam(required = false) String account_iban, @ApiParam("Amount Ordering direction. It can be any of these values:ASC,DESC") @RequestParam(required = false) Direction direction) {
 
 		return defaultMapper.mapAsList(transactionService.searchTransactions(account_iban, direction), Transaction.class);
 	}

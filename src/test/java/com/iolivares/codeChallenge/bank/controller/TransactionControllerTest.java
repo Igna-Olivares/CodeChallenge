@@ -1,7 +1,6 @@
 package com.iolivares.codeChallenge.bank.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -12,6 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.data.domain.Sort.Direction;
 
 import com.iolivares.codeChallenge.bank.enumerations.TransactionChannels;
 import com.iolivares.codeChallenge.bank.model.api.CreateTransactionCommand;
@@ -49,8 +49,8 @@ public class TransactionControllerTest {
 				.manufacturePojo(ArrayList.class, com.iolivares.codeChallenge.bank.model.service.Transaction.class);
 
 		// When
-		when(transactionService.searchTransactions(anyString(), anyString())).thenReturn(mockedTransactionList);
-		List<Transaction> response = transactionController.getTransactions("ES9820385778983000760236", "ASC");
+		when(transactionService.searchTransactions("ES9820385778983000760236", Direction.ASC)).thenReturn(mockedTransactionList);
+		List<Transaction> response = transactionController.getTransactions("ES9820385778983000760236", Direction.ASC);
 
 		// Then
 		assertThat(response).isNotNull();
@@ -78,12 +78,12 @@ public class TransactionControllerTest {
 	public void createTransactionTest() {
 
 		// Given
-		com.iolivares.codeChallenge.bank.model.service.Transaction mockedTransactionStatus = factory
+		com.iolivares.codeChallenge.bank.model.service.Transaction mockedTransaction = factory
 				.manufacturePojo(com.iolivares.codeChallenge.bank.model.service.Transaction.class);
 		CreateTransactionCommand command = new CreateTransactionCommand();
 
 		// When
-		when(transactionService.createTransaction(command)).thenReturn(mockedTransactionStatus);
+		when(transactionService.createTransaction(command)).thenReturn(mockedTransaction);
 		Transaction response = transactionController.createTransaction(command);
 
 		// Then
