@@ -43,13 +43,13 @@ public class DateUtilsTest {
 	public void compareDatesBeforeToday() {
 
 		// Given
-		Long inputDate = LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+		Long inputDate = LocalDate.now().minusDays(13L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
 		// When
  		int dateDifference = DateUtils.compareDatesToNow(inputDate);
 
 		// Then
-		assertTrue(dateDifference == -1);
+		assertTrue(dateDifference <= -1);
 	}
 	
 	@Test
@@ -75,7 +75,7 @@ public class DateUtilsTest {
  		int dateDifference = DateUtils.compareDatesToNow(inputDate);
 
 		// Then
-		assertTrue(dateDifference == 1);
+		assertTrue(dateDifference >= 1);
 	}
 
 }

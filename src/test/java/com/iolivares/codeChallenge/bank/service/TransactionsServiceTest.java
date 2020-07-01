@@ -286,7 +286,7 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().minusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
+		mockedTransaction.setDate(LocalDate.now().minusDays(3L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //yesterday on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 
@@ -472,7 +472,7 @@ public class TransactionsServiceTest {
 		mockedTransaction.setReference("12345A");
 		mockedTransaction.setAccountIban("ES9820385778983000760236");
 		mockedTransaction.setAmount(193.38);
-		mockedTransaction.setDate(LocalDate.now().plusDays(1L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
+		mockedTransaction.setDate(LocalDate.now().plusDays(2L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()); //tomorrow on long
 		mockedTransaction.setFee(3.18);
 		mockedTransaction.setDescription("Restaurant payment");
 

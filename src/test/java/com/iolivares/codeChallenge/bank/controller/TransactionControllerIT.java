@@ -56,8 +56,6 @@ public class TransactionControllerIT {
 		newTransaction.setFee(3.18);
 		newTransaction.setDescription("Restaurant payment");
 
-		com.iolivares.codeChallenge.bank.model.service.Transaction mockedTransaction = defaultMapper.map(newTransaction,
-				com.iolivares.codeChallenge.bank.model.service.Transaction.class);
 
 		// When
 		ResponseEntity<Transaction> result = restTemplate.postForEntity("http://localhost:8080/api/v1/transactions-manager", newTransaction,
@@ -93,23 +91,23 @@ public class TransactionControllerIT {
 	@Test
 	public void searchTransactionStatus() {
 		// Given
-		com.iolivares.codeChallenge.bank.model.service.TransactionStatus mockedTransactionStatus = new com.iolivares.codeChallenge.bank.model.service.TransactionStatus();
-		mockedTransactionStatus.setReference("12345A");
-		mockedTransactionStatus.setStatus("PENDING");
-		mockedTransactionStatus.setAmount(183.2);
-		mockedTransactionStatus.setFee(3.18);
+		com.iolivares.codeChallenge.bank.model.service.TransactionStatus expectedTransactionStatus = new com.iolivares.codeChallenge.bank.model.service.TransactionStatus();
+		expectedTransactionStatus.setReference("12345B");
+		expectedTransactionStatus.setStatus("SETTLED");
+		expectedTransactionStatus.setAmount(452.3);
+		expectedTransactionStatus.setFee(3.18);
 
 		// When
 		ResponseEntity<TransactionStatus> result = restTemplate.getForEntity(
-				"http://localhost:8080/api/v1/transactions-manager/transaction-status?channel=INTERNAL&reference=12345A", TransactionStatus.class);
+				"http://localhost:8080/api/v1/transactions-manager/transaction-status?channel=INTERNAL&reference=12345B", TransactionStatus.class);
 
 		// Then
 		assertEquals(result.getStatusCode(), HttpStatus.OK);
 		TransactionStatus response = result.getBody();
 		assertThat(response).isNotNull();
-		assertEquals(response.getReference(), mockedTransactionStatus.getReference());
-		assertEquals(response.getStatus(), mockedTransactionStatus.getStatus());
-		assertEquals(response.getAmount(), mockedTransactionStatus.getAmount(), 0.01);
-		assertEquals(response.getFee(),mockedTransactionStatus.getFee(),0.01);
+		assertEquals(response.getReference(), expectedTransactionStatus.getReference());
+		assertEquals(response.getStatus(), expectedTransactionStatus.getStatus());
+		assertEquals(response.getAmount(), expectedTransactionStatus.getAmount(), 0.01);
+		assertEquals(response.getFee(),expectedTransactionStatus.getFee(),0.01);
 	}
 }
